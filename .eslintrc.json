@@ -1,0 +1,48 @@
+{
+	"extends": ["airbnb"],
+	"env": {
+		"es6": true,
+		"browser": true
+	},
+	"plugins": [
+		"react",
+		"react-native",
+		"import",
+		"jsx-a11y",
+		"prettier"
+	],
+	"parser": "babel-eslint",
+	"parserOptions": {
+		"ecmaFeatures": {
+			"jsx": true,
+			"modules": true
+		}
+	},
+	"rules": {
+		"keyword-spacing": 2,
+		"prettier/prettier": 0,
+		"react/jsx-filename-extension": 0,
+		"react/react-in-jsx-scope": 0,
+		"react/prop-types": 0,
+		"no-plusplus": 0,
+		"object-curly-newline": 0,
+		"object-curly-spacing": 0,
+		"no-underscore-dangle": 0,
+		"no-return-assign": 0,
+		"no-shadow": 0,
+		"radix": 0,
+		"no-useless-return": 0,
+		"no-use-before-define": 0,
+		"no-param-reassign": 0,
+		"import/no-extraneous-dependencies": 0,
+		"react/no-string-refs": 0,
+		"linebreak-style": 0,
+		"max-len": ["error", {
+			"code": 150,
+			"ignoreComments": true,
+			"ignoreStrings": true,
+			"ignoreTrailingComments": true
+		}]
+	}
+
+}
