@@ -38,10 +38,10 @@ New Architecture builds create C++ object paths longer than Windows' 260-charact
 
 1. Enable long paths (PowerShell as Administrator), then restart:
    `New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force`
-2. The build uses CMake 3.31.1 from the Android SDK (see `cmakeVersion` in `android/build.gradle`), whose Ninja
-   supports long paths. Gradle downloads it automatically; you can also install it from
-   Android Studio > SDK Manager > SDK Tools > CMake (tick "Show Package Details").
-   Set the `CMAKE_VERSION` environment variable to use a different SDK CMake version.
+2. Install a newer CMake: Android Studio > Settings > Android SDK > SDK Tools, tick "Show Package Details",
+   expand CMake and install the newest version listed. On Windows the build automatically uses the newest
+   CMake installed in the SDK (its Ninja supports long paths). Set the `CMAKE_VERSION` environment variable
+   to force a specific installed version.
 3. After changing either of these, delete `android/app/.cxx` and `android/app/build` before rebuilding.
 
 ### Release signing

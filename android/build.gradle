@@ -6,11 +6,6 @@ buildscript {
         targetSdkVersion = 37
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.2.0"
-        // CMake 3.22.1 (the Android Gradle Plugin default) bundles a Ninja that can't handle paths longer
-        // than 260 characters, which breaks New Architecture builds on Windows. Newer SDK CMake releases
-        // bundle a Ninja that supports long paths. Gradle downloads this version automatically if missing.
-        // Override with the CMAKE_VERSION environment variable.
-        cmakeVersion = System.getenv("CMAKE_VERSION") ?: "3.31.1"
     }
     repositories {
         google()
@@ -23,13 +18,50 @@ buildscript {
     }
 }
 
-// Use the same CMake for the app and every native library module (gesture-handler, screens, reanimated, ...).
+// On Windows, the default CMake (3.22.1) bundles a Ninja that can't handle paths longer than 260 characters,
+// which breaks New Architecture builds ("Filename longer than 260 characters"). Build with the newest CMake
+// installed in the Android SDK instead (install one via SDK Manager > SDK Tools > CMake), or the version
+// given in the CMAKE_VERSION environment variable.
+def findCmakeVersion = {
+    if (System.getenv("CMAKE_VERSION")) {
+        return System.getenv("CMAKE_VERSION")
+    }
+    if (!System.getProperty("os.name").toLowerCase().contains("windows")) {
+        return null
+    }
+    def localProperties = new Properties()
+    def localPropertiesFile = file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withInputStream { localProperties.load(it) }
+    }
+    def sdkDir = localProperties.getProperty("sdk.dir") ?: System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
+    def cmakeDirs = sdkDir ? new File(sdkDir, "cmake").listFiles() : null
+    def versions = (cmakeDirs ?: [])
+        .findAll { it.isDirectory() && it.name ==~ /\d+(\.\d+)*/ }
+        .collect { it.name }
+    def newest = versions.max { a, b ->
+        def x = a.tokenize(".")*.toInteger()
+        def y = b.tokenize(".")*.toInteger()
+        [x, y].transpose().collect { it[0] <=> it[1] }.find { it != 0 } ?: x.size() <=> y.size()
+    }
+    if (newest == null || newest == "3.22.1") {
+        logger.warn("Only CMake 3.22.1 (or none) found in the Android SDK. Windows builds may fail with " +
+            "'Filename longer than 260 characters': install a newer CMake via SDK Manager > SDK Tools > CMake.")
+    }
+    return newest
+}
+def cmakeVersion = findCmakeVersion()
+
+// Use that CMake for the app and every native library module (gesture-handler, screens, op-sqlite, ...).
 // This must come before the React Native root plugin below: that plugin forces :app to be evaluated
 // immediately, so the hook has to be registered first to run before AGP reads the CMake version.
-subprojects {
-    def pinCmakeVersion = { project.android.externalNativeBuild.cmake.version = rootProject.ext.cmakeVersion }
-    plugins.withId("com.android.application", pinCmakeVersion)
-    plugins.withId("com.android.library", pinCmakeVersion)
+if (cmakeVersion) {
+    logger.lifecycle("Using CMake ${cmakeVersion} for native builds")
+    subprojects {
+        def pinCmakeVersion = { project.android.externalNativeBuild.cmake.version = cmakeVersion }
+        plugins.withId("com.android.application", pinCmakeVersion)
+        plugins.withId("com.android.library", pinCmakeVersion)
+    }
 }
 
 apply plugin: "com.facebook.react.rootproject"
