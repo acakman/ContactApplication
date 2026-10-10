@@ -54,3 +54,8 @@ buck-out/
 
 # Bundle artifact
 *.jsbundle
+!debug.keystore
+
+# Android build output / Gradle
+.kotlin/
+android/app/.cxx/

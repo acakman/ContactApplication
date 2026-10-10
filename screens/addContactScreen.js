@@ -1,149 +1,107 @@
-import React, {Component} from 'react';
-import {ScrollView, Alert} from 'react-native';
-import {FormInput, FormLabel, FormValidationMessage, Button} from 'react-native-elements';
-import ImagePicker from 'react-native-image-picker';
-import _ from 'lodash';
+import React, {useRef, useState} from 'react';
+import {ScrollView} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {insert} from '../www/database';
 import styles from '../styles/styles';
 import AddContactPicture from '../components/AddContactAvatar';
+import FormField from '../components/FormField';
+import Button from '../components/Button';
+import pickImage from '../utils/pickImage';
 // TODO Either reduce the size of the image or convert it to blob from base64 and decode it everytime
-export default class AddContactScreen extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {image: '', firstname: '', lastname: '', number: '', email: '', notes: '', emptyFirstname: false, emptyNumber: false};
-    this.firstnameInput = null;
-    this.numberInput = null;
-  }
+const AddContactScreen = ({navigation}) => {
+  const insets = useSafeAreaInsets();
+  const [image, setImage] = useState('');
+  const [firstname, setFirstname] = useState('');
+  const [lastname, setLastname] = useState('');
+  const [number, setNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
+  const [emptyFirstname, setEmptyFirstname] = useState(false);
+  const [emptyNumber, setEmptyNumber] = useState(false);
+  const firstnameInput = useRef(null);
+  const numberInput = useRef(null);
 
-addContactHandler = () => {
-  const {firstname, lastname, number, email, notes, image} = _.cloneDeep(this.state);
-  const {navigation} = this.props;
-  if (firstname === '' || number === '') {
-    if (firstname === '') {
-      this.firstnameInput.shake();
-      this.setState({emptyFirstname: true});
-    } else {
-      this.setState({emptyFirstname: false});
+  const addContactHandler = async () => {
+    setEmptyFirstname(firstname === '');
+    setEmptyNumber(number === '');
+    if (firstname === '' || number === '') {
+      if (firstname === '') {
+        firstnameInput.current.shake();
+      }
+      if (number === '') {
+        numberInput.current.shake();
+      }
+      return;
     }
-    if (number === '') {
-      this.numberInput.shake();
-      this.setState({emptyNumber: true});
-    } else {
-      this.setState({emptyNumber: false});
+    try {
+      await insert(firstname, lastname, number, email, notes, image);
+    } catch (error) {
+      console.log(`Insert transaction error: ${error.message}`);
     }
-  } else {
-    this.setState({emptyNumber: false, emptyFirstname: false});
-    insert(firstname, lastname, number, email, notes, image);
     navigation.navigate('Contacts');
-  }
-}
-
-addImage = () => {
-  const options = {
-    title: 'Select Avatar',
-    quality: 0.5,
-    maxWidth: 500,
-    maxHeight: 500,
   };
-  ImagePicker.showImagePicker(options, (response) => {
-    if (response.error) {
-      Alert.alert(`Error on image selection ${response.error}`);
-    } else if (response.didCancel) {} else {
-      const source = {uri: `data:image/jpeg;base64,${response.data}`};
-      this.setState({image: source.uri});
-    }
-  });
-}
 
-render() {
-  const {firstname, lastname, number, email, notes, emptyFirstname, emptyNumber, image} = this.state;
+  const addImage = async () => {
+    const uri = await pickImage();
+    if (uri) {
+      setImage(uri);
+    }
+  };
+
   return (
-    <ScrollView style={styles.viewContainer}>
-      <AddContactPicture
-        image={image}
-        onPress={this.addImage}
-      />
-      <FormLabel>
-        {'Firstname'}
-      </FormLabel>
-      <FormInput
-        ref={ref => this.firstnameInput = ref}
-        onChangeText={firstname => this.setState({firstname})}
+    <ScrollView
+      style={styles.viewContainer}
+      contentContainerStyle={{paddingBottom: insets.bottom + 20}}
+      keyboardShouldPersistTaps="handled"
+    >
+      <AddContactPicture image={image} onPress={addImage} />
+      <FormField
+        ref={firstnameInput}
+        label="Firstname"
+        onChangeText={setFirstname}
         value={firstname}
         placeholder="Enter firstname"
-        placeholderTextColor="#636263"
-        containerStyle={{borderBottomWidth: 0.5}}
-        inputStyle={{color: '#000000'}}
+        error={emptyFirstname && 'This field is required'}
       />
-      <FormValidationMessage
-        containerStyle={[!emptyFirstname && styles.invisible, emptyFirstname && styles.visible]}
-      >
-        {'This field is required'}
-      </FormValidationMessage>
-      <FormLabel>
-        {'Lastname'}
-      </FormLabel>
-      <FormInput
-        onChangeText={lastname => this.setState({lastname})}
+      <FormField
+        label="Lastname"
+        onChangeText={setLastname}
         value={lastname}
         placeholder="Enter lastname (optional)"
-        placeholderTextColor="#636263"
-        containerStyle={{borderBottomWidth: 0.5}}
-        inputStyle={{color: '#000000'}}
       />
-      <FormLabel>
-        {'Number'}
-      </FormLabel>
-      <FormInput
-        ref={ref => this.numberInput = ref}
-        onChangeText={number => this.setState({number})}
+      <FormField
+        ref={numberInput}
+        label="Number"
+        onChangeText={setNumber}
         value={number}
         keyboardType="phone-pad"
         placeholder="Enter number"
-        placeholderTextColor="#636263"
-        containerStyle={{borderBottomWidth: 0.5}}
-        inputStyle={{color: '#000000'}}
+        error={emptyNumber && 'This field is required'}
       />
-      <FormValidationMessage
-        containerStyle={[!emptyNumber && styles.invisible, emptyNumber && styles.visible]}
-      >
-        {'This field is required'}
-      </FormValidationMessage>
-      <FormLabel>
-        {'E-mail'}
-      </FormLabel>
-      <FormInput
-        onChangeText={email => this.setState({email})}
+      <FormField
+        label="E-mail"
+        onChangeText={setEmail}
         value={email}
         keyboardType="email-address"
+        autoCapitalize="none"
         placeholder="Enter email (optional)"
-        placeholderTextColor="#636263"
-        containerStyle={{borderBottomWidth: 0.5}}
-        inputStyle={{color: '#000000'}}
       />
-      <FormLabel>
-        {'Notes'}
-      </FormLabel>
-      <FormInput
-        onChangeText={notes => this.setState({notes})}
+      <FormField
+        label="Notes"
+        onChangeText={setNotes}
         value={notes}
         placeholder="Enter notes (optional)"
-        placeholderTextColor="#636263"
         multiline
-        containerStyle={{height: 120, paddingTop: 0, paddingBottom: 0, borderBottomWidth: 0.5}}
-        inputStyle={{height: 120, color: '#000000', textAlignVertical: 'top'}}
       />
       <Button
-        onPress={() => this.addContactHandler({firstname, lastname, number, email, notes})}
+        onPress={addContactHandler}
         title="CONFIRM"
-        buttonStyle={{
-          backgroundColor: '#0bac25',
-          marginTop: 40,
-          marginBottom: 20,
-        }}
-        icon={{name: 'check'}}
+        icon="check"
+        backgroundColor="#0bac25"
+        style={styles.formButton}
       />
     </ScrollView>
   );
-}
-}
+};
+
+export default AddContactScreen;

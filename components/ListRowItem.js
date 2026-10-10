@@ -1,17 +1,18 @@
 import React from 'react';
-import {ListItem} from 'react-native-elements';
-import {TouchableNativeFeedback} from 'react-native';
+import {Pressable, Text, View} from 'react-native';
+import styles from '../styles/styles';
 
 const ListRowItem = ({title, avatar, leftIcon, onPress, onLongPress}) => (
-  <ListItem
-    title={title}
-    avatar={avatar}
-    component={TouchableNativeFeedback}
-    leftIcon={leftIcon}
+  <Pressable
     onPress={onPress}
     onLongPress={onLongPress}
-    wrapperStyle={{height: 50, borderBottomWidth: 0.5}}
-  />
+    android_ripple={{color: '#ddd'}}
+    style={styles.listRow}
+  >
+    {leftIcon}
+    <View style={styles.listRowAvatar}>{avatar}</View>
+    <Text style={styles.listRowTitle} numberOfLines={1}>{title}</Text>
+  </Pressable>
 );
 
 export default ListRowItem;

@@ -1,75 +1,43 @@
-import React, {Component} from 'react';
-import {Avatar} from 'react-native-elements';
+import React from 'react';
+import {Image, Pressable, Text, View} from 'react-native';
+import styles from '../styles/styles';
 
-export const listPicture = (image, firstname, lastname) => {
-  if (image === '') {
-    return (
-      <Avatar
-        small
-        rounded
-        title={firstname.charAt(0) + lastname.charAt(0)}
-      />);
+const SIZES = {small: 34, xlarge: 150};
+
+export const Avatar = ({image, title, size = 'small', onPress, style}) => {
+  const dimension = SIZES[size];
+  const circle = {width: dimension, height: dimension, borderRadius: dimension / 2};
+  const content = image ? (
+    <Image source={{uri: image}} style={circle} />
+  ) : (
+    <View style={[styles.avatarPlaceholder, circle]}>
+      <Text style={[styles.avatarTitle, size === 'xlarge' && styles.avatarTitleLarge]}>
+        {title}
+      </Text>
+    </View>
+  );
+  if (!onPress) {
+    return <View style={style}>{content}</View>;
   }
   return (
-    <Avatar
-      small
-      rounded
-      source={{uri: image}}
-    />
+    <Pressable style={style} onPress={onPress} accessibilityRole="imagebutton">
+      {content}
+    </Pressable>
   );
 };
 
-export class ProfilePicture extends Component {
-  constructor(props) {
-    super(props);
-    this.image = '';
-    this.firstname = '';
-    this.lastname = '';
-    this.edit = null;
-  }
+const initials = (firstname, lastname) => (firstname || '').charAt(0) + (lastname || '').charAt(0);
 
-  render() {
-    const {image, edit, firstname, lastname, onPress} = this.props;
-    if (image === '') {
-      if (edit) {
-        return (
-          <Avatar
-            xlarge
-            rounded
-            title="Edit Image"
-            containerStyle={{alignSelf: 'center', marginTop: 20}}
-            titleStyle={{fontSize: 25}}
-            onPress={onPress}
-          />
-        );
-      }
-      return (
-        <Avatar
-          xlarge
-          rounded
-          title={firstname.charAt(0) + lastname.charAt(0)}
-          containerStyle={{alignSelf: 'center', marginTop: 20}}
-        />);
-    }
-    if (edit) {
-      return (
-        <Avatar
-          xlarge
-          rounded
-          source={{uri: image}}
-          containerStyle={{alignSelf: 'center', marginTop: 20}}
-          titleStyle={{fontSize: 25}}
-          onPress={onPress}
-        />
-      );
-    }
-    return (
-      <Avatar
-        xlarge
-        rounded
-        source={{uri: image}}
-        containerStyle={{alignSelf: 'center', marginTop: 20}}
-      />
-    );
-  }
-}
+export const listPicture = (image, firstname, lastname) => (
+  <Avatar image={image} title={initials(firstname, lastname)} />
+);
+
+export const ProfilePicture = ({image, edit, firstname, lastname, onPress}) => (
+  <Avatar
+    size="xlarge"
+    image={image}
+    title={edit ? 'Edit Image' : initials(firstname, lastname)}
+    onPress={edit ? onPress : undefined}
+    style={styles.profileAvatar}
+  />
+);

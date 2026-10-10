@@ -1,29 +1,17 @@
 import React from 'react';
 import {View} from 'react-native';
-import {Icon} from 'react-native-elements';
+import IconButton from './IconButton';
+import styles from '../styles/styles';
 
 const MainButtons = ({longPressed, onCancelPress, onAddContactPress, onDeletePress}) => {
   if (longPressed === true) {
     return (
-      <View
-        style={{flex: 1, flexDirection: 'row'}}
-      >
-        <Icon
-          name="cancel"
-          onPress={onCancelPress}
-        />
-        <Icon
-          name="delete-forever"
-          onPress={onDeletePress}
-        />
+      <View style={styles.row}>
+        <IconButton name="cancel" onPress={onCancelPress} accessibilityLabel="Cancel selection" />
+        <IconButton name="delete-forever" onPress={onDeletePress} accessibilityLabel="Delete selected contacts" />
       </View>
     );
   }
-  return (
-    <Icon
-      name="person-add"
-      onPress={onAddContactPress}
-    />
-  );
+  return <IconButton name="person-add" onPress={onAddContactPress} accessibilityLabel="Add contact" />;
 };
 export default MainButtons;

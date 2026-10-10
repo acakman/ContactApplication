@@ -1,192 +1,144 @@
-import React, {Component} from 'react';
-import {ScrollView, Alert} from 'react-native';
-import {Icon, Button, FormInput, FormLabel, FormValidationMessage} from 'react-native-elements';
-import ImagePicker from 'react-native-image-picker';
+import React, {useCallback, useLayoutEffect, useRef, useState} from 'react';
+import {ScrollView} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {update, remove} from '../www/database';
 import styles from '../styles/styles';
 import {ProfilePicture} from '../components/avatar';
+import FormField from '../components/FormField';
+import Button from '../components/Button';
+import IconButton from '../components/IconButton';
+import pickImage from '../utils/pickImage';
 
-export default class ProfileScreen extends Component {
-  static navigationOptions = ({navigation}) => ({
-    headerRight: (
-      <Icon
-        name={navigation.getParam('title')}
-        onPress={navigation.getParam('editHandler')}
-      />
-    ),
-  });
+const ProfileScreen = ({navigation, route}) => {
+  const {Contact} = route.params;
+  const {id} = Contact;
+  const insets = useSafeAreaInsets();
+  const [firstname, setFirstname] = useState(Contact.firstname);
+  const [lastname, setLastname] = useState(Contact.lastname);
+  const [number, setNumber] = useState(Contact.number);
+  const [email, setEmail] = useState(Contact.email);
+  const [notes, setNotes] = useState(Contact.notes);
+  const [image, setImage] = useState(Contact.image);
+  const [edit, setEdit] = useState(false);
+  const [emptyFirstname, setEmptyFirstname] = useState(false);
+  const [emptyNumber, setEmptyNumber] = useState(false);
+  const firstnameInput = useRef(null);
+  const numberInput = useRef(null);
 
-  constructor(props) {
-    super(props);
-    this.state = {firstname: '', lastname: '', number: null, email: '', notes: '', edit: false, emptyFirstname: false, emptyNumber: false, image: ''};
-    this.firstnameInput = null;
-    this.numberInput = null;
-  }
-
-  componentWillMount() {
-    const {navigation} = this.props;
-    navigation.setParams({ title: 'create', editHandler: this.editHandler});
-    const {Contact} = navigation.state.params;
-    this.setState({firstname: Contact.firstname, lastname: Contact.lastname, number: Contact.number, email: Contact.email, notes: Contact.notes});
-    this.setState({image: Contact.image});
-  }
-
-  editHandler = () => {
-    const {navigation} = this.props;
-    const {edit, firstname, lastname, number, email, notes, image} = this.state;
-    const {id} = navigation.state.params.Contact;
-    /* eslint-disable */
-    if (edit !== true) {
-      this.setState({edit: true});
-      navigation.setParams({title: 'check'});
+  const editHandler = useCallback(async () => {
+    if (!edit) {
+      setEdit(true);
+      return;
     }
-    else {
-      if (firstname === '' || number === '') {
-        if (firstname === '') {
-          this.firstnameInput.shake();
-          this.setState({emptyFirstname: true});
-        } else {
-          this.setState({emptyFirstname: false});
-        }
-        if(number === '') {
-          this.numberInput.shake();
-          this.setState({emptyNumber: true});
-        } else {
-          this.setState({emptyNumber: false});
-        }
-      } else {
-        this.setState({emptyNumber: false, emptyFirstname: false});
-        console.log(image);
-        update(firstname, lastname, number, email, id, notes, image);
-        navigation.goBack();
+    setEmptyFirstname(firstname === '');
+    setEmptyNumber(number === '');
+    if (firstname === '' || number === '') {
+      if (firstname === '') {
+        firstnameInput.current.shake();
       }
+      if (number === '') {
+        numberInput.current.shake();
+      }
+      return;
     }
-    /* eslint-enable */
-  }
-
-  deleteHandler = ({id}) => {
-    const {navigation} = this.props;
-    remove(id);
+    try {
+      await update(firstname, lastname, number, email, id, notes, image);
+    } catch (error) {
+      console.log(`Update transaction error: ${error.message}`);
+    }
     navigation.goBack();
-  }
+  }, [edit, firstname, lastname, number, email, id, notes, image, navigation]);
 
-  addImage = () => {
-    const options = {
-      title: 'Select Avatar',
-      quality: 0.5,
-      maxWidth: 500,
-      maxHeight: 500,
-    };
-    ImagePicker.showImagePicker(options, (response) => {
-      if (response.error) {
-        Alert.alert(`Error on image selection ${response.error}`);
-      } else if (response.didCancel) {} else {
-        const source = {uri: `data:image/jpeg;base64,${response.data}`};
-        this.setState({image: source.uri});
-      }
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <IconButton
+          name={edit ? 'check' : 'create'}
+          onPress={editHandler}
+          accessibilityLabel={edit ? 'Save contact' : 'Edit contact'}
+        />
+      ),
     });
-  }
+  }, [navigation, edit, editHandler]);
 
-  render() {
-    const {navigation} = this.props;
-    const {firstname, lastname, number, email, edit, notes, emptyNumber, emptyFirstname, image} = this.state;
-    const {id} = navigation.state.params.Contact;
-    return (
-      <ScrollView
-        style={styles.viewContainer}
-      >
-        <ProfilePicture
-          image={image}
-          firstname={firstname}
-          lastname={lastname}
-          edit={edit}
-          onPress={this.addImage}
-        />
-        <FormLabel>
-          {'Firstname'}
-        </FormLabel>
-        <FormInput
-          ref={ref => this.firstnameInput = ref}
-          defaultValue={firstname}
-          value={firstname}
-          onChangeText={firstname => this.setState({firstname})}
-          editable={edit}
-          containerStyle={{borderBottomWidth: 0.5}}
-          inputStyle={{color: '#000000'}}
-        />
-        <FormValidationMessage
-          containerStyle={[!emptyFirstname && styles.invisible, emptyFirstname && styles.visible]}
-        >
-          {'This field is required'}
-        </FormValidationMessage>
-        <FormLabel>
-          {'Lastname'}
-        </FormLabel>
-        <FormInput
-          defaultValue={lastname}
-          value={lastname}
-          onChangeText={lastname => this.setState({lastname})}
-          editable={edit}
-          containerStyle={{borderBottomWidth: 0.5}}
-          inputStyle={{color: '#000000'}}
-        />
-        <FormLabel>
-          {'Number'}
-        </FormLabel>
-        <FormInput
-          ref={ref => this.numberInput = ref}
-          defaultValue={number}
-          value={number}
-          onChangeText={number => this.setState({number})}
-          editable={edit}
-          keyboardType="phone-pad"
-          containerStyle={{borderBottomWidth: 0.5}}
-          inputStyle={{color: '#000000'}}
-        />
-        <FormValidationMessage
-          containerStyle={[!emptyNumber && styles.invisible, emptyNumber && styles.visible]}
-        >
-          {'This field is required'}
-        </FormValidationMessage>
-        <FormLabel>
-          {'E-mail'}
-        </FormLabel>
-        <FormInput
-          defaultValue={email}
-          value={email}
-          onChangeText={email => this.setState({email})}
-          editable={edit}
-          keyboardType="email-address"
-          containerStyle={{borderBottomWidth: 0.5}}
-          inputStyle={{color: '#000000'}}
-        />
-        <FormLabel>
-          {'Notes'}
-        </FormLabel>
-        <FormInput
-          defaultValue={notes}
-          value={notes}
-          onChangeText={notes => this.setState({notes})}
-          editable={edit}
-          multiline
-          containerStyle={{borderBottomWidth: 0.5, paddingTop: 0, paddingBottom: 0}}
-          inputStyle={{color: '#000000'}}
-        />
+  const deleteHandler = async () => {
+    try {
+      await remove(id);
+    } catch (error) {
+      console.log(`Remove from DB error: ${error.message}`);
+    }
+    navigation.goBack();
+  };
+
+  const addImage = async () => {
+    const uri = await pickImage();
+    if (uri) {
+      setImage(uri);
+    }
+  };
+
+  return (
+    <ScrollView
+      style={styles.viewContainer}
+      contentContainerStyle={{paddingBottom: insets.bottom + 20}}
+      keyboardShouldPersistTaps="handled"
+    >
+      <ProfilePicture
+        image={image}
+        firstname={firstname}
+        lastname={lastname}
+        edit={edit}
+        onPress={addImage}
+      />
+      <FormField
+        ref={firstnameInput}
+        label="Firstname"
+        value={firstname}
+        onChangeText={setFirstname}
+        editable={edit}
+        error={emptyFirstname && 'This field is required'}
+      />
+      <FormField
+        label="Lastname"
+        value={lastname}
+        onChangeText={setLastname}
+        editable={edit}
+      />
+      <FormField
+        ref={numberInput}
+        label="Number"
+        value={number}
+        onChangeText={setNumber}
+        editable={edit}
+        keyboardType="phone-pad"
+        error={emptyNumber && 'This field is required'}
+      />
+      <FormField
+        label="E-mail"
+        value={email}
+        onChangeText={setEmail}
+        editable={edit}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
+      <FormField
+        label="Notes"
+        value={notes}
+        onChangeText={setNotes}
+        editable={edit}
+        multiline
+      />
+      {edit ? (
         <Button
-          onPress={() => this.deleteHandler({id})}
+          onPress={deleteHandler}
           title="DELETE CONTACT"
-          icon={{name: 'delete-forever'}}
-          disabled={!edit}
-          disabledStyle={{opacity: 0, height: 0, width: 0}}
-          disabledTitleStyle={{opacity: 0}}
-          buttonStyle={{
-            backgroundColor: '#ff0000',
-            bottom: 20,
-            marginTop: 40,
-          }}
+          icon="delete-forever"
+          backgroundColor="#ff0000"
+          style={styles.formButton}
         />
-      </ScrollView>
+      ) : null}
+    </ScrollView>
+  );
+};
 
-    );
-  }
-}
+export default ProfileScreen;

@@ -1,37 +1,28 @@
 import React from 'react';
-import { createStackNavigator} from 'react-navigation';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 // Screens
 import ContactsScreen from '../screens/mainScreen';
 import ProfileScreen from '../screens/profileScreen';
 import AddContactScreen from '../screens/addContactScreen';
-// Stores
-// eslint-disable-next-line
-import * as store from '../store'
+import styles from '../styles/styles';
 
-const RootNavigator = createStackNavigator({
-  Contacts: {
-    screen: ContactsScreen,
-    navigationOptions: () => ({
-      title: 'Contacts',
-    }),
-  },
-  Profile: {
-    screen: ProfileScreen,
-    navigationOptions: () => ({
-      title: 'Profile',
-    }),
-  },
-  AddContact: {
-    screen: AddContactScreen,
-    navigationOptions: () => ({
-      title: 'Add New Contact',
-    }),
-  },
-  initialRouteName: 'Contacts',
-});
+const Stack = createNativeStackNavigator();
 
 const Nav = () => (
-  <RootNavigator />
+  <GestureHandlerRootView style={styles.root}>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Contacts">
+          <Stack.Screen name="Contacts" component={ContactsScreen} options={{title: 'Contacts'}} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{title: 'Profile'}} />
+          <Stack.Screen name="AddContact" component={AddContactScreen} options={{title: 'Add New Contact'}} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  </GestureHandlerRootView>
 );
 
 export default Nav;

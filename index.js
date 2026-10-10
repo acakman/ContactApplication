@@ -1,6 +1,6 @@
-import { AppRegistry, YellowBox } from 'react-native';
+import 'react-native-gesture-handler';
+import {AppRegistry} from 'react-native';
 import Nav from './navigators/navigator';
+import {name as appName} from './app.json';
 
-YellowBox.ignoreWarnings(['Warning: isMounted(...) is deprecated', 'Module RCTImageLoader']);
-YellowBox.ignoreWarnings(['Remote debugger (...) seperated windows).', 'Module RCTImageLoader']);
-AppRegistry.registerComponent('Contact', () => Nav);
+AppRegistry.registerComponent(appName, () => Nav);
