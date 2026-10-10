@@ -6,6 +6,11 @@ buildscript {
         targetSdkVersion = 37
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.2.0"
+        // CMake 3.22.1 (the Android Gradle Plugin default) bundles a Ninja that can't handle paths longer
+        // than 260 characters, which breaks New Architecture builds on Windows. Newer SDK CMake releases
+        // bundle a Ninja that supports long paths. Gradle downloads this version automatically if missing.
+        // Override with the CMAKE_VERSION environment variable.
+        cmakeVersion = System.getenv("CMAKE_VERSION") ?: "3.31.1"
     }
     repositories {
         google()
@@ -19,3 +24,10 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// Use the same CMake for the app and every native library module (gesture-handler, screens, reanimated, ...).
+subprojects {
+    def pinCmakeVersion = { project.android.externalNativeBuild.cmake.version = rootProject.ext.cmakeVersion }
+    plugins.withId("com.android.application", pinCmakeVersion)
+    plugins.withId("com.android.library", pinCmakeVersion)
+}

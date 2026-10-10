@@ -31,6 +31,19 @@ npm test
 npm run lint
 ```
 
+### Building on Windows
+
+New Architecture builds create C++ object paths longer than Windows' 260-character limit
+(`ninja: error: ... Filename longer than 260 characters`). To build on Windows:
+
+1. Enable long paths (PowerShell as Administrator), then restart:
+   `New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force`
+2. The build uses CMake 3.31.1 from the Android SDK (see `cmakeVersion` in `android/build.gradle`), whose Ninja
+   supports long paths. Gradle downloads it automatically; you can also install it from
+   Android Studio > SDK Manager > SDK Tools > CMake (tick "Show Package Details").
+   Set the `CMAKE_VERSION` environment variable to use a different SDK CMake version.
+3. After changing either of these, delete `android/app/.cxx` and `android/app/build` before rebuilding.
+
 ### Release signing
 
 Keystore credentials are no longer stored in the repository. Add them to `~/.gradle/gradle.properties`
