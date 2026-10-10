@@ -23,11 +23,14 @@ buildscript {
     }
 }
 
-apply plugin: "com.facebook.react.rootproject"
-
 // Use the same CMake for the app and every native library module (gesture-handler, screens, reanimated, ...).
+// This must come before the React Native root plugin below: that plugin forces :app to be evaluated
+// immediately, so the hook has to be registered first to run before AGP reads the CMake version.
 subprojects {
     def pinCmakeVersion = { project.android.externalNativeBuild.cmake.version = rootProject.ext.cmakeVersion }
     plugins.withId("com.android.application", pinCmakeVersion)
     plugins.withId("com.android.library", pinCmakeVersion)
 }
+
+apply plugin: "com.facebook.react.rootproject"
+
